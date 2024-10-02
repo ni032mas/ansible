@@ -1,0 +1,3 @@
+---
+# vars file for ./roles/nginx
+__config_temp: "/etc/nginx/nginx.conf.new"

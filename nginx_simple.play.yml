@@ -1,0 +1,4 @@
+- name: Install Nginx on vm2
+  hosts: vm2
+  roles:
+    - nginx

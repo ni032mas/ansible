@@ -1,0 +1,15 @@
+---
+# defaults file for ./roles/postgresql
+postgresql_data_dir: /data/postgres/data
+postgresql_version: >-
+  {% if   ansible_distribution_major_version | int == 22 %}14
+  {% elif ansible_distribution_major_version | int == 20 %}12
+  {% elif ansible_distribution_major_version | int == 18 %}10
+  {% elif ansible_distribution_major_version | int == 16 %}9.5
+  {% elif ansible_distribution_major_version | int == 14 %}9.3
+  {% endif %}
+postgresql_conf: {}
+pg_hba_conf: []
+postgres_users: []
+postgres_databases: []
+exporter_version: "0.9.0"

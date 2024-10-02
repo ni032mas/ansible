@@ -1,0 +1,43 @@
+---
+# tasks file for ./roles/nginx
+- name: Configure Nginx
+  become: true
+  block:
+    - name: Install Nginx package
+      ansible.builtin.apt:
+        name: "nginx={{ nginx__version }}"
+        update_cache: true
+        state: present
+      notify:
+        - Restart Nginx
+    - name: Copy new config
+      ansible.builtin.copy:
+        src: "{{ nginx__config_src }}"
+        dest: "{{ __config_temp }}"
+        owner: root
+        group: root
+        mode: "644"
+    - name: Validate new config
+      ansible.builtin.command:
+        cmd: "nginx -t -c '{{ __config_temp }}'"
+      changed_when: false
+    - name: Copy config
+      ansible.builtin.copy:
+        src: "{{ __config_temp }}"
+        dest: "{{ nginx__config_dest }}"
+        owner: root
+        group: root
+        mode: "644"
+        remote_src: true
+      notify:
+        - Reload Nginx service
+    - name: Enable Nginx service now
+      ansible.builtin.systemd_service:
+        name: nginx.service
+        enabled: true
+        state: started
+  rescue:
+    - name: Remove new config on error
+      file:
+        path: "{{ __config_temp }}"
+        state: absent

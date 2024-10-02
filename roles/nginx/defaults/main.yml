@@ -1,0 +1,6 @@
+---
+# defaults file for ./roles/nginx
+nginx__version: "1.18.0*"
+nginx__config_src: nginx.conf
+nginx__config_temp: /etc/nginx/nginx.new.conf
+nginx__config_dest: /etc/nginx/nginx.conf

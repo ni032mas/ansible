@@ -1,0 +1,21 @@
+- name: Install and configure PostgreSQL on VM2
+  hosts: vm2
+  become: yes
+  roles:
+    - role: postgresql
+      vars:
+        postgresql_data_dir: /data/postgres/data
+        postgresql_conf:
+          listen_addresses: "'*'"
+          max_connections: 100
+        pg_hba_conf:
+          - database: all
+            user: all
+            address: 0.0.0.0/0
+            method: md5
+        postgres_users:
+          - name: myuser
+            password: mysecurepassword
+        postgres_databases:
+          - name: mydb
+            owner: myuser

@@ -1,0 +1,11 @@
+---
+# handlers file for ./roles/postgresql
+- name: Restart PostgreSQL
+  systemd:
+    name: postgresql
+    state: restarted
+
+- name: Restart postgres_exporter
+  systemd:
+    name: postgres_exporter
+    state: restarted

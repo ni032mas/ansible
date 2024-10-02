@@ -1,0 +1,5 @@
+# PostgreSQL configuration file
+
+{% for key, value in postgresql_conf.items() %}
+{{ key }} = {{ value }}
+{% endfor %}

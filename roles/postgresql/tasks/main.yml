@@ -1,0 +1,116 @@
+---
+# tasks file for ./roles/postgresql
+- name: Configure PostgreSQL
+  become: true
+  block:
+    - name: Ensure PostgreSQL is installed
+      apt:
+        name: postgresql
+        state: present
+    - name: Ensure /data directory exists with correct permissions
+      file:
+        path: /data
+        state: directory
+        owner: root
+        group: root
+        mode: 0755
+
+    - name: Ensure /data/postgres directory exists with correct permissions
+      file:
+        path: /data/postgres
+        state: directory
+        owner: postgres
+        group: postgres
+        mode: 0700
+
+    - name: Ensure data directory exists with correct permissions
+      file:
+        path: "{{ postgresql_data_dir }}"
+        state: directory
+        owner: postgres
+        group: postgres
+        mode: 0700
+
+    - name: Install PostgreSQL
+      apt:
+        name: postgresql
+        state: present
+
+    - name: Initialize PostgreSQL Database
+      become_user: postgres
+      command: /usr/lib/postgresql/{{ postgresql_version | trim }}/bin/pg_ctl initdb -D {{ postgresql_data_dir }}
+      args:
+        creates: "{{ postgresql_data_dir }}/PG_VERSION"
+
+    - name: Set up postgresql.conf
+      template:
+        src: postgresql.conf.j2
+        dest: "{{ postgresql_data_dir }}/postgresql.conf"
+      notify: Restart PostgreSQL
+
+    - name: Set up pg_hba.conf
+      template:
+        src: pg_hba.conf.j2
+        dest: "{{ postgresql_data_dir }}/pg_hba.conf"
+      notify: Restart PostgreSQL
+
+    - name: Start and enable PostgreSQL service
+      systemd:
+        name: postgresql
+        state: started
+        enabled: yes
+
+    - name: Wait for PostgreSQL to be up
+      wait_for:
+        host: 127.0.0.1
+        port: 5432
+        delay: 5
+        timeout: 30
+        state: started
+
+    - name: Check PostgreSQL is running
+      become_user: postgres
+      postgresql_query:
+        query: "SELECT 1;"
+      register: postgresql_running
+      until: postgresql_running.rowcount > 0
+      retries: 5
+      delay: 5
+      
+    - name: Show full query result structure
+      debug:
+        var: postgresql_running
+
+
+    - name: Create PostgreSQL users
+      become_user: postgres
+      postgresql_user: "{{ item }}"
+      with_items: "{{ postgres_users }}"
+
+    - name: Create PostgreSQL databases
+      become_user: postgres
+      postgresql_db: "{{ item }}"
+      with_items: "{{ postgres_databases }}"
+
+    - name: Install postgres-exporter
+      get_url:
+        url: "https://github.com/prometheus-community/postgres_exporter/releases/download/v{{ exporter_version }}/postgres_exporter-{{ exporter_version }}.linux-amd64.tar.gz"
+        dest: /tmp/postgres_exporter.tar.gz
+
+    - name: Extract postgres-exporter
+      unarchive:
+        src: /tmp/postgres_exporter.tar.gz
+        dest: /usr/local/bin/
+        remote_src: yes
+
+    - name: Copy postgres_exporter.service file
+      copy:
+        src: postgres_exporter.service
+        dest: /etc/systemd/system/postgres_exporter.service
+
+    - name: Start and enable postgres_exporter service
+      systemd:
+        name: postgres_exporter
+        state: started
+        enabled: yes
+      notify: Restart postgres_exporter
