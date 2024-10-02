@@ -38,7 +38,7 @@
 
     - name: Initialize PostgreSQL Database
       become_user: postgres
-      command: /usr/lib/postgresql/{{ postgresql_version | trim }}/bin/pg_ctl initdb -D {{ postgresql_data_dir }}
+      command: /usr/lib/postgresql/{{ postgresql_version | trim }}/bin/pg_ctl initdb -D $PGDATA
       args:
         creates: "{{ postgresql_data_dir }}/PG_VERSION"
 
